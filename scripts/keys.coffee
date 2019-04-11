@@ -22,10 +22,12 @@
 
 module.exports = (robot)->
 
+	Keys = ["","","","",""]
+
 	key = ()->
-		Key = robot.brain.get("key") or ""
-		robot.brain.set("key" ,Key)
-		Key	
+		Keys = robot.brain.get("keys")
+		robot.brain.set("keys" ,Keys)
+		Keys
 
 	
 	robot.respond /i have (a key|the key|key|keys)/i, (msg)->
@@ -33,23 +35,36 @@ module.exports = (robot)->
 		user = robot.brain.userForName name
 		k = key()
 		if typeof user is 'object'
+			count = 0
 			msg.send "Okay #{name} has keys"
-			k = user.name
-		robot.brain.set("key",k)	
+			while count < k.length
+				if k[count] == ""
+					do k[count] = user.name
+					count++;
+					break
+		robot.brain.set("keys",k)		
 
 
 	robot.respond /i (don\'t|dont|do not) (has|have) (the key|key|keys|a key)/i , (msg)->
 		name = msg.message.user.name
 		user = robot.brain.userForName name
 		k = key()
-		if k is name
-			k = ""
+		count = 0
+		while count < k.length
+			if k[count] == name
+				do k[count] = ""
+				count++;
+				break
 		if typeof user is 'object'
-			if k is ""
-				msg.send "Okay #{name} doesn't have keys. Who got the keys then?"
-			else
-				msg.send "Yes , i know buddy, its because #{k} has got the keys"	
-		robot.brain.set("key",k)	
+			count = 0
+			while count < k.length
+				if k[count] == ""
+					msg.send "Okay #{name} doesn't have keys. Who got the keys then?"
+					count++;
+					break
+				else
+					msg.send "Yes , i know buddy, its because #{k} has got the keys"	
+		robot.brain.set("keys",k)	
 
 
 	robot.respond /(.+) (has|have) (the key|key|keys|a key)/i , (msg)->
@@ -64,7 +79,13 @@ module.exports = (robot)->
 			else
 				users = robot.brain.usersForFuzzyName othername
 				if users.length is 1
-					robot.brain.set "key", users[0].name
+					count = 0
+					while count < k.length
+						if k[count] == ""
+							k[count] = users[0].name
+							count++;
+							break
+					robot.brain.set("keys",k)
 					msg.send "Okay, so now the keys are with #{users[0].name}"
 				else if users.length > 1
 					msg.send getAmbiguousUserText users
@@ -84,20 +105,26 @@ module.exports = (robot)->
 			if users is null
 				msg.send "I don't know anyone by the name #{othername}"
 			else
-				k = users.name
+			count = 0
+			while count < k.length
+				if k[count] == name
+					k[count] = othername
+					count++;
+					break
 				msg.send "Okay, so now the keys are with #{users.name}"		
 
-		robot.brain.set("key",k)		
+		robot.brain.set("keys",k)		
 				
 	robot.respond /(who|who all) (has|have) (the key|key|keys|a key)/i , (msg)->
 		k = key()
-		msgText = k
-		if msgText is ""
-			msg.send "Ah! Nobody informed me about the keys. Don't hold me responsible for this :expressionless:"
-		else
-			msgText+=" has keys"
-			msg.send msgText	
-		robot.brain.set("key" ,k)
+		msgText = "The current key holders are "
+		count = 0
+		while count < k.length
+			if k[count] != ""
+				msgText+= k[count]+" "
+
+			robot.brain.set("keys" ,k)
+
 
 getAmbiguousUserText = (users) ->
     "Be more specific, I know #{users.length} people named like that: #{(user.name for user in users).join(", ")}"
